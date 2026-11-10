@@ -1,174 +1,157 @@
 
-### =========================================================
-### TASK MANAGER API - MANUAL TEST COLLECTION
-### IntelliJ IDEA HTTP Client
-### =========================================================
+### TASK MANAGER API
+### Manual tests using IntelliJ HTTP Client
 
 @baseUrl = http://localhost:8080
-@taskId = 1
-@missingTaskId = 999999
+@missingId = 999999
 
-### =========================================================
-### 1. CREATE TASK - SUCCESS (201 CREATED)
-### =========================================================
+### ==========================================================
+### 01 - CREATE TASK (201)
+### Run this request FIRST
+### ==========================================================
 
-//POST {{baseUrl}}/api/tasks
-//Content-Type: application/json
-//
-//{
-//  "title": "Prepare technical interview",
-//  "description": "Review Java, Spring Boot and REST APIs",
-//  "dueDate": "2026-12-15"
-//}
-
-
-### Create task and remember its ID
 POST {{baseUrl}}/api/tasks
 Content-Type: application/json
 
 {
   "title": "Prepare technical interview",
-  "description": "Review Java and Spring Boot",
-  "dueDate": "2026-12-15"
+  "description": "Review Java, Spring Boot and REST",
+  "dueDate": "2099-12-15"
 }
 
 > {%
     client.test("Task created successfully", function() {
         client.assert(response.status === 201, "Expected HTTP 201");
-        client.assert(response.body.id != null, "Task ID is missing");
-        client.assert(
-            response.body.status === "PENDING",
-            "Expected PENDING status"
-        );
+        client.assert(response.body.id != null, "Missing task ID");
+        client.assert(response.body.status === "PENDING", "Expected PENDING");
     });
 
     client.global.set("createdTaskId", response.body.id);
 %}
 
-### =========================================================
-### 2. CREATE TASK WITH EXPLICIT STATUS (201 CREATED)
-### =========================================================
+### ==========================================================
+### 02 - GET TASK BY ID (200)
+### ==========================================================
 
-POST {{baseUrl}}/api/tasks
-Content-Type: application/json
+GET {{baseUrl}}/api/tasks/{{createdTaskId}}
+Accept: application/json
 
-{
-  "title": "Complete technical assessment",
-  "description": "Implement Task Manager API",
-  "status": "IN_PROGRESS",
-  "dueDate": "2026-12-20"
-}
+> {%
+    client.test("Task retrieved", function() {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.title === "Prepare technical interview");
+    });
+%}
 
-### =========================================================
-### 3. CREATE TASK - MINIMAL REQUEST (201 CREATED)
-### =========================================================
-
-POST {{baseUrl}}/api/tasks
-Content-Type: application/json
-
-{
-  "title": "Study Java"
-}
-
-### =========================================================
-### 4. GET ALL TASKS (200 OK)
-### =========================================================
+### ==========================================================
+### 03 - LIST ALL TASKS (200)
+### ==========================================================
 
 GET {{baseUrl}}/api/tasks
 Accept: application/json
 
-### =========================================================
-### 5. GET TASKS BY STATUS - PENDING (200 OK)
-### =========================================================
+> {%
+    client.test("Task list returned", function() {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(Array.isArray(response.body), "Expected JSON array");
+    });
+%}
+
+### ==========================================================
+### 04 - FILTER BY PENDING STATUS (200)
+### ==========================================================
 
 GET {{baseUrl}}/api/tasks?status=PENDING
 Accept: application/json
 
-### =========================================================
-### 6. GET TASKS BY STATUS - COMPLETED (200 OK)
-### =========================================================
+### ==========================================================
+### 05 - CREATE SECOND TASK (201)
+### ==========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Complete Java assessment",
+  "description": "Implement all REST endpoints",
+  "status": "COMPLETED"
+}
+
+> {%
+    client.test("Second task created", function() {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.status === "COMPLETED");
+    });
+    client.global.set("secondTaskId", response.body.id);
+%}
+
+### ==========================================================
+### 06 - FILTER BY COMPLETED STATUS (200)
+### ==========================================================
 
 GET {{baseUrl}}/api/tasks?status=COMPLETED
 Accept: application/json
 
-### =========================================================
-### 7. GET TASK BY ID (200 OK)
-### =========================================================
+### ==========================================================
+### 07 - FULL UPDATE USING PUT (200)
+### ==========================================================
 
-GET {{baseUrl}}/api/tasks/{{taskId}}
-Accept: application/json
-
-### =========================================================
-### 8. UPDATE TASK - PUT (200 OK)
-### =========================================================
-
-PUT {{baseUrl}}/api/tasks/{{taskId}}
+PUT {{baseUrl}}/api/tasks/{{createdTaskId}}
 Content-Type: application/json
 
 {
-  "title": "Prepare final technical interview",
-  "description": "Review controllers, services and repositories",
+  "title": "Prepare final interview",
+  "description": "Review controllers services and repositories",
   "status": "IN_PROGRESS",
-  "dueDate": "2026-12-18"
+  "dueDate": "2099-12-20"
 }
 
-### =========================================================
-### 9. UPDATE STATUS ONLY - PATCH (200 OK)
-### =========================================================
+> {%
+    client.test("Task updated", function() {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.status === "IN_PROGRESS");
+        client.assert(response.body.title === "Prepare final interview");
+    });
+%}
 
-PATCH {{baseUrl}}/api/tasks/{{taskId}}/status
+### ==========================================================
+### 08 - UPDATE ONLY STATUS USING PATCH (200)
+### ==========================================================
+
+PATCH {{baseUrl}}/api/tasks/{{createdTaskId}}/status
 Content-Type: application/json
 
 {
   "status": "COMPLETED"
 }
 
-### =========================================================
-### 10. DELETE TASK (204 NO CONTENT)
-### =========================================================
+> {%
+    client.test("Status updated", function() {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.status === "COMPLETED");
+        client.assert(response.body.title === "Prepare final interview");
+    });
+%}
 
-DELETE {{baseUrl}}/api/tasks/{{taskId}}
+### ==========================================================
+### 09 - VERIFY PERSISTED UPDATE (200)
+### ==========================================================
 
-### =========================================================
-### 11. GET NONEXISTENT TASK (404 NOT FOUND)
-### =========================================================
-
-GET {{baseUrl}}/api/tasks/{{missingTaskId}}
+GET {{baseUrl}}/api/tasks/{{createdTaskId}}
 Accept: application/json
 
-### =========================================================
-### 12. UPDATE NONEXISTENT TASK (404 NOT FOUND)
-### =========================================================
+> {%
+    client.test("Update persisted", function() {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.status === "COMPLETED");
+    });
+%}
 
-PUT {{baseUrl}}/api/tasks/{{missingTaskId}}
-Content-Type: application/json
+### ==========================================================
+### NEGATIVE TEST SCENARIOS
+### ==========================================================
 
-{
-  "title": "Nonexistent task",
-  "description": "This should return 404",
-  "status": "PENDING"
-}
-
-### =========================================================
-### 13. PATCH NONEXISTENT TASK (404 NOT FOUND)
-### =========================================================
-
-PATCH {{baseUrl}}/api/tasks/{{missingTaskId}}/status
-Content-Type: application/json
-
-{
-  "status": "COMPLETED"
-}
-
-### =========================================================
-### 14. DELETE NONEXISTENT TASK (404 NOT FOUND)
-### =========================================================
-
-DELETE {{baseUrl}}/api/tasks/{{missingTaskId}}
-
-### =========================================================
-### 15. CREATE TASK - TITLE TOO SHORT (400 BAD REQUEST)
-### =========================================================
+### 10 - TITLE TOO SHORT (400)
 
 POST {{baseUrl}}/api/tasks
 Content-Type: application/json
@@ -177,9 +160,14 @@ Content-Type: application/json
   "title": "AB"
 }
 
-### =========================================================
-### 16. CREATE TASK - BLANK TITLE (400 BAD REQUEST)
-### =========================================================
+> {%
+    client.test("Short title rejected", function() {
+        client.assert(response.status === 400, "Expected HTTP 400");
+        client.assert(response.body.fields.title != null, "Missing title error");
+    });
+%}
+
+### 11 - BLANK TITLE (400)
 
 POST {{baseUrl}}/api/tasks
 Content-Type: application/json
@@ -188,115 +176,172 @@ Content-Type: application/json
   "title": "   "
 }
 
-### =========================================================
-### 17. CREATE TASK - MISSING TITLE (400 BAD REQUEST)
-### =========================================================
+### 12 - TITLE MISSING (400)
 
 POST {{baseUrl}}/api/tasks
 Content-Type: application/json
 
 {
-  "description": "Task without title"
+  "description": "No title provided"
 }
 
-### =========================================================
-### 18. CREATE TASK - DESCRIPTION TOO LONG (400)
-### =========================================================
+### 13 - NULL TITLE (400)
 
 POST {{baseUrl}}/api/tasks
 Content-Type: application/json
 
 {
-  "title": "Validate description length",
-  "description": "{{longDescription}}"
+  "title": null
 }
 
-### =========================================================
-### 19. CREATE TASK - PAST DUE DATE (400 BAD REQUEST)
-### =========================================================
+### 14 - PAST DUE DATE (400)
 
 POST {{baseUrl}}/api/tasks
 Content-Type: application/json
 
 {
-  "title": "Task with invalid due date",
+  "title": "Invalid deadline",
   "dueDate": "2020-01-01"
 }
 
-### =========================================================
-### 20. CREATE TASK - INVALID STATUS (400 BAD REQUEST)
-### =========================================================
+> {%
+    client.test("Past due date rejected", function() {
+        client.assert(response.status === 400, "Expected HTTP 400");
+        client.assert(response.body.fields.dueDate != null);
+    });
+%}
+
+### 15 - INVALID STATUS ON CREATION (400)
 
 POST {{baseUrl}}/api/tasks
 Content-Type: application/json
 
 {
-  "title": "Task with invalid status",
+  "title": "Invalid status test",
   "status": "CANCELLED"
 }
 
-### =========================================================
-### 21. PATCH STATUS - NULL STATUS (400 BAD REQUEST)
-### =========================================================
+### 16 - INVALID STATUS FILTER (400)
 
-PATCH {{baseUrl}}/api/tasks/{{taskId}}/status
+GET {{baseUrl}}/api/tasks?status=INVALID
+Accept: application/json
+
+### 17 - NULL STATUS IN PATCH (400)
+
+PATCH {{baseUrl}}/api/tasks/{{createdTaskId}}/status
 Content-Type: application/json
 
 {
   "status": null
 }
 
-### =========================================================
-### 22. PATCH STATUS - INVALID STATUS (400 BAD REQUEST)
-### =========================================================
+### 18 - INVALID STATUS IN PATCH (400)
 
-PATCH {{baseUrl}}/api/tasks/{{taskId}}/status
+PATCH {{baseUrl}}/api/tasks/{{createdTaskId}}/status
 Content-Type: application/json
 
 {
-  "status": "INVALID"
+  "status": "UNKNOWN"
 }
 
-### =========================================================
-### 23. PUT TASK - TITLE TOO SHORT (400 BAD REQUEST)
-### =========================================================
+### 19 - INVALID PUT TITLE (400)
 
-PUT {{baseUrl}}/api/tasks/{{taskId}}
+PUT {{baseUrl}}/api/tasks/{{createdTaskId}}
 Content-Type: application/json
 
 {
   "title": "AB",
-  "description": "Invalid title",
+  "description": "Invalid update",
   "status": "PENDING"
 }
 
-### =========================================================
-### 24. PUT TASK - MISSING STATUS (400 BAD REQUEST)
-### =========================================================
+### 20 - MISSING STATUS IN PUT (400)
 
-PUT {{baseUrl}}/api/tasks/{{taskId}}
+PUT {{baseUrl}}/api/tasks/{{createdTaskId}}
 Content-Type: application/json
 
 {
-  "title": "Task without required status",
-  "description": "Status is missing"
+  "title": "Task without update status"
 }
 
-### =========================================================
-### 25. GET TASKS - INVALID STATUS FILTER (400)
-### =========================================================
-
-GET {{baseUrl}}/api/tasks?status=INVALID
-Accept: application/json
-
-### =========================================================
-### 26. CREATE TASK - MALFORMED JSON (400 BAD REQUEST)
-### =========================================================
+### 21 - MALFORMED JSON (400)
 
 POST {{baseUrl}}/api/tasks
 Content-Type: application/json
 
 {
-  "title": "Malformed JSON",
-  "description": "Missing closing brace"
+  "title": "Malformed JSON"
 
+### ==========================================================
+### NOT FOUND SCENARIOS
+### ==========================================================
+
+### 22 - GET UNKNOWN TASK (404)
+
+GET {{baseUrl}}/api/tasks/{{missingId}}
+Accept: application/json
+
+> {%
+    client.test("Missing task returns 404", function() {
+        client.assert(response.status === 404, "Expected HTTP 404");
+        client.assert(response.body.status === 404);
+    });
+%}
+
+### 23 - PUT UNKNOWN TASK (404)
+
+PUT {{baseUrl}}/api/tasks/{{missingId}}
+Content-Type: application/json
+
+{
+  "title": "Unknown task update",
+  "description": "Should fail",
+  "status": "PENDING"
+}
+
+### 24 - PATCH UNKNOWN TASK (404)
+
+PATCH {{baseUrl}}/api/tasks/{{missingId}}/status
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+### 25 - DELETE UNKNOWN TASK (404)
+
+DELETE {{baseUrl}}/api/tasks/{{missingId}}
+
+### ==========================================================
+### DELETE TESTS - EXECUTE LAST
+### ==========================================================
+
+### 26 - DELETE CREATED TASK (204)
+
+DELETE {{baseUrl}}/api/tasks/{{createdTaskId}}
+
+> {%
+    client.test("Task deleted", function() {
+        client.assert(response.status === 204, "Expected HTTP 204");
+    });
+%}
+
+### 27 - VERIFY DELETED TASK RETURNS 404
+
+GET {{baseUrl}}/api/tasks/{{createdTaskId}}
+Accept: application/json
+
+> {%
+    client.test("Deleted task is not found", function() {
+        client.assert(response.status === 404, "Expected HTTP 404");
+    });
+%}
+
+### 28 - DELETE SECOND TASK (204)
+
+DELETE {{baseUrl}}/api/tasks/{{secondTaskId}}
+
+### 29 - FINAL LIST (200)
+
+GET {{baseUrl}}/api/tasks
+Accept: application/json

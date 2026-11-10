@@ -1,37 +1,56 @@
-HELP.md
-.gradle
+
+# Gradle
+.gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+# Java
+*.class
+*.log
+hs_err_pid*
+replay_pid*
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# IntelliJ IDEA
+.idea/
 *.iml
 *.ipr
+*.iws
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# Eclipse and Spring Tool Suite
+.project
+.classpath
+.settings/
+.springBeans
+.sts4-cache/
 
-### VS Code ###
+# VS Code
 .vscode/
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+application-local.yaml
+application-local.yml
+application-local.properties
+*.jks
+*.p12
+*.pem
+*.key
+
+# Local database files
+*.mv.db
+*.trace.db
+``
