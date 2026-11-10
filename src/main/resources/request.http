@@ -1,0 +1,302 @@
+
+### =========================================================
+### TASK MANAGER API - MANUAL TEST COLLECTION
+### IntelliJ IDEA HTTP Client
+### =========================================================
+
+@baseUrl = http://localhost:8080
+@taskId = 1
+@missingTaskId = 999999
+
+### =========================================================
+### 1. CREATE TASK - SUCCESS (201 CREATED)
+### =========================================================
+
+//POST {{baseUrl}}/api/tasks
+//Content-Type: application/json
+//
+//{
+//  "title": "Prepare technical interview",
+//  "description": "Review Java, Spring Boot and REST APIs",
+//  "dueDate": "2026-12-15"
+//}
+
+
+### Create task and remember its ID
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Prepare technical interview",
+  "description": "Review Java and Spring Boot",
+  "dueDate": "2026-12-15"
+}
+
+> {%
+    client.test("Task created successfully", function() {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.id != null, "Task ID is missing");
+        client.assert(
+            response.body.status === "PENDING",
+            "Expected PENDING status"
+        );
+    });
+
+    client.global.set("createdTaskId", response.body.id);
+%}
+
+### =========================================================
+### 2. CREATE TASK WITH EXPLICIT STATUS (201 CREATED)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Complete technical assessment",
+  "description": "Implement Task Manager API",
+  "status": "IN_PROGRESS",
+  "dueDate": "2026-12-20"
+}
+
+### =========================================================
+### 3. CREATE TASK - MINIMAL REQUEST (201 CREATED)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Study Java"
+}
+
+### =========================================================
+### 4. GET ALL TASKS (200 OK)
+### =========================================================
+
+GET {{baseUrl}}/api/tasks
+Accept: application/json
+
+### =========================================================
+### 5. GET TASKS BY STATUS - PENDING (200 OK)
+### =========================================================
+
+GET {{baseUrl}}/api/tasks?status=PENDING
+Accept: application/json
+
+### =========================================================
+### 6. GET TASKS BY STATUS - COMPLETED (200 OK)
+### =========================================================
+
+GET {{baseUrl}}/api/tasks?status=COMPLETED
+Accept: application/json
+
+### =========================================================
+### 7. GET TASK BY ID (200 OK)
+### =========================================================
+
+GET {{baseUrl}}/api/tasks/{{taskId}}
+Accept: application/json
+
+### =========================================================
+### 8. UPDATE TASK - PUT (200 OK)
+### =========================================================
+
+PUT {{baseUrl}}/api/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "title": "Prepare final technical interview",
+  "description": "Review controllers, services and repositories",
+  "status": "IN_PROGRESS",
+  "dueDate": "2026-12-18"
+}
+
+### =========================================================
+### 9. UPDATE STATUS ONLY - PATCH (200 OK)
+### =========================================================
+
+PATCH {{baseUrl}}/api/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+### =========================================================
+### 10. DELETE TASK (204 NO CONTENT)
+### =========================================================
+
+DELETE {{baseUrl}}/api/tasks/{{taskId}}
+
+### =========================================================
+### 11. GET NONEXISTENT TASK (404 NOT FOUND)
+### =========================================================
+
+GET {{baseUrl}}/api/tasks/{{missingTaskId}}
+Accept: application/json
+
+### =========================================================
+### 12. UPDATE NONEXISTENT TASK (404 NOT FOUND)
+### =========================================================
+
+PUT {{baseUrl}}/api/tasks/{{missingTaskId}}
+Content-Type: application/json
+
+{
+  "title": "Nonexistent task",
+  "description": "This should return 404",
+  "status": "PENDING"
+}
+
+### =========================================================
+### 13. PATCH NONEXISTENT TASK (404 NOT FOUND)
+### =========================================================
+
+PATCH {{baseUrl}}/api/tasks/{{missingTaskId}}/status
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+### =========================================================
+### 14. DELETE NONEXISTENT TASK (404 NOT FOUND)
+### =========================================================
+
+DELETE {{baseUrl}}/api/tasks/{{missingTaskId}}
+
+### =========================================================
+### 15. CREATE TASK - TITLE TOO SHORT (400 BAD REQUEST)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "AB"
+}
+
+### =========================================================
+### 16. CREATE TASK - BLANK TITLE (400 BAD REQUEST)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "   "
+}
+
+### =========================================================
+### 17. CREATE TASK - MISSING TITLE (400 BAD REQUEST)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "description": "Task without title"
+}
+
+### =========================================================
+### 18. CREATE TASK - DESCRIPTION TOO LONG (400)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Validate description length",
+  "description": "{{longDescription}}"
+}
+
+### =========================================================
+### 19. CREATE TASK - PAST DUE DATE (400 BAD REQUEST)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Task with invalid due date",
+  "dueDate": "2020-01-01"
+}
+
+### =========================================================
+### 20. CREATE TASK - INVALID STATUS (400 BAD REQUEST)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Task with invalid status",
+  "status": "CANCELLED"
+}
+
+### =========================================================
+### 21. PATCH STATUS - NULL STATUS (400 BAD REQUEST)
+### =========================================================
+
+PATCH {{baseUrl}}/api/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": null
+}
+
+### =========================================================
+### 22. PATCH STATUS - INVALID STATUS (400 BAD REQUEST)
+### =========================================================
+
+PATCH {{baseUrl}}/api/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "INVALID"
+}
+
+### =========================================================
+### 23. PUT TASK - TITLE TOO SHORT (400 BAD REQUEST)
+### =========================================================
+
+PUT {{baseUrl}}/api/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "title": "AB",
+  "description": "Invalid title",
+  "status": "PENDING"
+}
+
+### =========================================================
+### 24. PUT TASK - MISSING STATUS (400 BAD REQUEST)
+### =========================================================
+
+PUT {{baseUrl}}/api/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "title": "Task without required status",
+  "description": "Status is missing"
+}
+
+### =========================================================
+### 25. GET TASKS - INVALID STATUS FILTER (400)
+### =========================================================
+
+GET {{baseUrl}}/api/tasks?status=INVALID
+Accept: application/json
+
+### =========================================================
+### 26. CREATE TASK - MALFORMED JSON (400 BAD REQUEST)
+### =========================================================
+
+POST {{baseUrl}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Malformed JSON",
+  "description": "Missing closing brace"
+
